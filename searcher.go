@@ -15,10 +15,18 @@ type Searcher interface {
 
 type searcher struct {
 	weaver.Implements[Searcher]
+	cache weaver.Ref[Cache]
 }
 
 func (s *searcher) Search(ctx context.Context, query string) ([]string, error) {
 	s.Logger(ctx).Debug("Search", "query", query)
+
+	if emojis, err := s.cache.Get().Get(ctx, query); err != nil {
+		s.Logger(ctx).Error("cache.Get", "query", query, "err", err)
+	} else if len(emojis) > 0 {
+		return emojis, nil
+	}
+
 	words := strings.Fields(strings.ToLower(query))
 
 	var result []string
@@ -29,6 +37,11 @@ func (s *searcher) Search(ctx context.Context, query string) ([]string, error) {
 	}
 
 	sort.Strings(result)
+
+	if err := s.cache.Get().Put(ctx, query, result); err != nil {
+		s.Logger(ctx).Error("cache.Put", "query", query, "err", err)
+	}
+
 	return result, nil
 }
 

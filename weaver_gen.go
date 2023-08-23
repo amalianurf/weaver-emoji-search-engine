@@ -35,6 +35,21 @@ please file an issue at https://github.com/ServiceWeaver/weaver/issues.
 
 func init() {
 	codegen.Register(codegen.Registration{
+		Name:  "emojis/Cache",
+		Iface: reflect.TypeOf((*Cache)(nil)).Elem(),
+		Impl:  reflect.TypeOf(cache{}),
+		LocalStubFn: func(impl any, caller string, tracer trace.Tracer) any {
+			return cache_local_stub{impl: impl.(Cache), tracer: tracer, getMetrics: codegen.MethodMetricsFor(codegen.MethodLabels{Caller: caller, Component: "emojis/Cache", Method: "Get", Remote: false}), putMetrics: codegen.MethodMetricsFor(codegen.MethodLabels{Caller: caller, Component: "emojis/Cache", Method: "Put", Remote: false})}
+		},
+		ClientStubFn: func(stub codegen.Stub, caller string) any {
+			return cache_client_stub{stub: stub, getMetrics: codegen.MethodMetricsFor(codegen.MethodLabels{Caller: caller, Component: "emojis/Cache", Method: "Get", Remote: true}), putMetrics: codegen.MethodMetricsFor(codegen.MethodLabels{Caller: caller, Component: "emojis/Cache", Method: "Put", Remote: true})}
+		},
+		ServerStubFn: func(impl any, addLoad func(uint64, float64)) codegen.Server {
+			return cache_server_stub{impl: impl.(Cache), addLoad: addLoad}
+		},
+		RefData: "",
+	})
+	codegen.Register(codegen.Registration{
 		Name:      "github.com/ServiceWeaver/weaver/Main",
 		Iface:     reflect.TypeOf((*weaver.Main)(nil)).Elem(),
 		Impl:      reflect.TypeOf(app{}),
@@ -61,19 +76,71 @@ func init() {
 		ServerStubFn: func(impl any, addLoad func(uint64, float64)) codegen.Server {
 			return searcher_server_stub{impl: impl.(Searcher), addLoad: addLoad}
 		},
-		RefData: "",
+		RefData: "⟦e0ea07ba:wEaVeReDgE:emojis/Searcher→emojis/Cache⟧\n",
 	})
 }
 
 // weaver.InstanceOf checks.
+var _ weaver.InstanceOf[Cache] = (*cache)(nil)
 var _ weaver.InstanceOf[weaver.Main] = (*app)(nil)
 var _ weaver.InstanceOf[Searcher] = (*searcher)(nil)
 
 // weaver.Router checks.
+var _ weaver.Unrouted = (*cache)(nil)
 var _ weaver.Unrouted = (*app)(nil)
 var _ weaver.Unrouted = (*searcher)(nil)
 
 // Local stub implementations.
+
+type cache_local_stub struct {
+	impl       Cache
+	tracer     trace.Tracer
+	getMetrics *codegen.MethodMetrics
+	putMetrics *codegen.MethodMetrics
+}
+
+// Check that cache_local_stub implements the Cache interface.
+var _ Cache = (*cache_local_stub)(nil)
+
+func (s cache_local_stub) Get(ctx context.Context, a0 string) (r0 []string, err error) {
+	// Update metrics.
+	begin := s.getMetrics.Begin()
+	defer func() { s.getMetrics.End(begin, err != nil, 0, 0) }()
+	span := trace.SpanFromContext(ctx)
+	if span.SpanContext().IsValid() {
+		// Create a child span for this method.
+		ctx, span = s.tracer.Start(ctx, "main.Cache.Get", trace.WithSpanKind(trace.SpanKindInternal))
+		defer func() {
+			if err != nil {
+				span.RecordError(err)
+				span.SetStatus(codes.Error, err.Error())
+			}
+			span.End()
+		}()
+	}
+
+	return s.impl.Get(ctx, a0)
+}
+
+func (s cache_local_stub) Put(ctx context.Context, a0 string, a1 []string) (err error) {
+	// Update metrics.
+	begin := s.putMetrics.Begin()
+	defer func() { s.putMetrics.End(begin, err != nil, 0, 0) }()
+	span := trace.SpanFromContext(ctx)
+	if span.SpanContext().IsValid() {
+		// Create a child span for this method.
+		ctx, span = s.tracer.Start(ctx, "main.Cache.Put", trace.WithSpanKind(trace.SpanKindInternal))
+		defer func() {
+			if err != nil {
+				span.RecordError(err)
+				span.SetStatus(codes.Error, err.Error())
+			}
+			span.End()
+		}()
+	}
+
+	return s.impl.Put(ctx, a0, a1)
+}
 
 type main_local_stub struct {
 	impl   weaver.Main
@@ -113,6 +180,122 @@ func (s searcher_local_stub) Search(ctx context.Context, a0 string) (r0 []string
 }
 
 // Client stub implementations.
+
+type cache_client_stub struct {
+	stub       codegen.Stub
+	getMetrics *codegen.MethodMetrics
+	putMetrics *codegen.MethodMetrics
+}
+
+// Check that cache_client_stub implements the Cache interface.
+var _ Cache = (*cache_client_stub)(nil)
+
+func (s cache_client_stub) Get(ctx context.Context, a0 string) (r0 []string, err error) {
+	// Update metrics.
+	var requestBytes, replyBytes int
+	begin := s.getMetrics.Begin()
+	defer func() { s.getMetrics.End(begin, err != nil, requestBytes, replyBytes) }()
+
+	span := trace.SpanFromContext(ctx)
+	if span.SpanContext().IsValid() {
+		// Create a child span for this method.
+		ctx, span = s.stub.Tracer().Start(ctx, "main.Cache.Get", trace.WithSpanKind(trace.SpanKindClient))
+	}
+
+	defer func() {
+		// Catch and return any panics detected during encoding/decoding/rpc.
+		if err == nil {
+			err = codegen.CatchPanics(recover())
+			if err != nil {
+				err = errors.Join(weaver.RemoteCallError, err)
+			}
+		}
+
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, err.Error())
+		}
+		span.End()
+
+	}()
+
+	// Preallocate a buffer of the right size.
+	size := 0
+	size += (4 + len(a0))
+	enc := codegen.NewEncoder()
+	enc.Reset(size)
+
+	// Encode arguments.
+	enc.String(a0)
+	var shardKey uint64
+
+	// Call the remote method.
+	requestBytes = len(enc.Data())
+	var results []byte
+	results, err = s.stub.Run(ctx, 0, enc.Data(), shardKey)
+	replyBytes = len(results)
+	if err != nil {
+		err = errors.Join(weaver.RemoteCallError, err)
+		return
+	}
+
+	// Decode the results.
+	dec := codegen.NewDecoder(results)
+	r0 = serviceweaver_dec_slice_string_4af10117(dec)
+	err = dec.Error()
+	return
+}
+
+func (s cache_client_stub) Put(ctx context.Context, a0 string, a1 []string) (err error) {
+	// Update metrics.
+	var requestBytes, replyBytes int
+	begin := s.putMetrics.Begin()
+	defer func() { s.putMetrics.End(begin, err != nil, requestBytes, replyBytes) }()
+
+	span := trace.SpanFromContext(ctx)
+	if span.SpanContext().IsValid() {
+		// Create a child span for this method.
+		ctx, span = s.stub.Tracer().Start(ctx, "main.Cache.Put", trace.WithSpanKind(trace.SpanKindClient))
+	}
+
+	defer func() {
+		// Catch and return any panics detected during encoding/decoding/rpc.
+		if err == nil {
+			err = codegen.CatchPanics(recover())
+			if err != nil {
+				err = errors.Join(weaver.RemoteCallError, err)
+			}
+		}
+
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, err.Error())
+		}
+		span.End()
+
+	}()
+
+	// Encode arguments.
+	enc := codegen.NewEncoder()
+	enc.String(a0)
+	serviceweaver_enc_slice_string_4af10117(enc, a1)
+	var shardKey uint64
+
+	// Call the remote method.
+	requestBytes = len(enc.Data())
+	var results []byte
+	results, err = s.stub.Run(ctx, 1, enc.Data(), shardKey)
+	replyBytes = len(results)
+	if err != nil {
+		err = errors.Join(weaver.RemoteCallError, err)
+		return
+	}
+
+	// Decode the results.
+	dec := codegen.NewDecoder(results)
+	err = dec.Error()
+	return
+}
 
 type main_client_stub struct {
 	stub codegen.Stub
@@ -186,6 +369,77 @@ func (s searcher_client_stub) Search(ctx context.Context, a0 string) (r0 []strin
 }
 
 // Server stub implementations.
+
+type cache_server_stub struct {
+	impl    Cache
+	addLoad func(key uint64, load float64)
+}
+
+// Check that cache_server_stub implements the codegen.Server interface.
+var _ codegen.Server = (*cache_server_stub)(nil)
+
+// GetStubFn implements the codegen.Server interface.
+func (s cache_server_stub) GetStubFn(method string) func(ctx context.Context, args []byte) ([]byte, error) {
+	switch method {
+	case "Get":
+		return s.get
+	case "Put":
+		return s.put
+	default:
+		return nil
+	}
+}
+
+func (s cache_server_stub) get(ctx context.Context, args []byte) (res []byte, err error) {
+	// Catch and return any panics detected during encoding/decoding/rpc.
+	defer func() {
+		if err == nil {
+			err = codegen.CatchPanics(recover())
+		}
+	}()
+
+	// Decode arguments.
+	dec := codegen.NewDecoder(args)
+	var a0 string
+	a0 = dec.String()
+
+	// TODO(rgrandl): The deferred function above will recover from panics in the
+	// user code: fix this.
+	// Call the local method.
+	r0, appErr := s.impl.Get(ctx, a0)
+
+	// Encode the results.
+	enc := codegen.NewEncoder()
+	serviceweaver_enc_slice_string_4af10117(enc, r0)
+	enc.Error(appErr)
+	return enc.Data(), nil
+}
+
+func (s cache_server_stub) put(ctx context.Context, args []byte) (res []byte, err error) {
+	// Catch and return any panics detected during encoding/decoding/rpc.
+	defer func() {
+		if err == nil {
+			err = codegen.CatchPanics(recover())
+		}
+	}()
+
+	// Decode arguments.
+	dec := codegen.NewDecoder(args)
+	var a0 string
+	a0 = dec.String()
+	var a1 []string
+	a1 = serviceweaver_dec_slice_string_4af10117(dec)
+
+	// TODO(rgrandl): The deferred function above will recover from panics in the
+	// user code: fix this.
+	// Call the local method.
+	appErr := s.impl.Put(ctx, a0, a1)
+
+	// Encode the results.
+	enc := codegen.NewEncoder()
+	enc.Error(appErr)
+	return enc.Data(), nil
+}
 
 type main_server_stub struct {
 	impl    weaver.Main
